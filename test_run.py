@@ -50,16 +50,23 @@ class TestRun(unittest.TestCase):
         self.assertEqual(run("if (1=2) {2; 3;} else {4; 5;}"), 5)
 
     def test_var(self):
-        self.assertEqual(run("set a = 1; a + 2;"), 3)
-
-    def _test_value_and_out(self, src, value, out):
-        e = Evaluator()
-        self.assertEqual(e.eval(Parser(src).parse()), value)
-        self.assertEqual(e.out, out)
+        self.assertEqual(run("define a = 1; a + 2;"), 3)
+        self.assertEqual(run("define a = 2; set a = a + 3; a;"), 5)
+        self._test_out("define a = 2; define b = 3; print(a); print(b);", [2, 3])
 
     def test_print(self):
-        self._test_value_and_out("print(3);", None, [3])
-        self._test_value_and_out("print(2); print(3); 1;", 1, [2, 3])
+        self._test_out("print(3);", [3])
+        self._test_out("print(2); print(3); 1;", [2, 3])
+
+    def test_scope(self):
+        self._test_out("define a = 2; print(a); {define a = 4; print (a);} print(a);", [2, 4, 2])
+        self._test_out("define a = 2; print(a); {set a = 4; print (a);} print(a);", [2, 4, 4])
+
+    def _test_out(self, src, out):
+        e = Evaluator()
+        e.eval(Parser(src).parse())
+        self.assertEqual(e.out, out)
+
 
 if __name__ == '__main__':
     unittest.main()

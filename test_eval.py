@@ -16,7 +16,7 @@ class TestEval(unittest.TestCase):
         self.assertEqual(Evaluator().eval(["block", 1, 2]), 2)
 
     def test_var(self):
-        self.assertEqual(Evaluator().eval(["block", ["set", "a", 3], "a"]), 3)
+        self.assertEqual(Evaluator().eval(["block", ["define", "a", 3], "a"]), 3)
 
     def test_calc(self):
         self.assertEqual(Evaluator().eval(["*", ["+", 1, 2], 3]), 9)
@@ -26,21 +26,21 @@ class TestEval(unittest.TestCase):
 
     def test_mutual_recursion(self):
         self.assertEqual(Evaluator().eval(["block",
-            ["set", "is_even", ["func", ["a"], ["if", ["=", "a", 0], 1, ["is_odd", ["-", "a", 1]]]]],
-            ["set", "is_odd", ["func", ["a"], ["if", ["=", "a", 0], 0, ["is_even", ["-", "a", 1]]]]],
+            ["define", "is_even", ["func", ["a"], ["if", ["=", "a", 0], 1, ["is_odd", ["-", "a", 1]]]]],
+            ["define", "is_odd", ["func", ["a"], ["if", ["=", "a", 0], 0, ["is_even", ["-", "a", 1]]]]],
             ["is_even", 4],
         ]), 1)
 
     def test_closure(self):
         self.assertEqual(Evaluator().eval(["block",
-            ["set", "make_adder", ["func", ["a"], ["func", ["b"], ["+", "a", "b"]]]],
-            ["set", "add3", ["make_adder", 3]],
+            ["define", "make_adder", ["func", ["a"], ["func", ["b"], ["+", "a", "b"]]]],
+            ["define", "add3", ["make_adder", 3]],
             ["add3", 4]
         ]), 7)
 
     def test_fib(self):
         self.assertEqual(Evaluator().eval(["block",
-            ["set", "fib", ["func", ["a"], [
+            ["define", "fib", ["func", ["a"], [
                 "if", ["=", "a", 1], 1, [
                     "if", ["=", "a", 2], 1, [
                         "+", ["fib", ["-", "a", 1]], ["fib", ["-", "a", 2]]]]]]],
@@ -59,11 +59,18 @@ class TestEval(unittest.TestCase):
     def test_scope(self):
         e = Evaluator()
         e.eval(["block",
-            ["set", "a", 3], ["print", "a"],
-            ["block", ["set", "a", 4], ["print", "a"]],
+            ["define", "a", 3], ["print", "a"],
+            ["block", ["define", "a", 4], ["print", "a"]],
             ["print", "a"],
         ])
         self.assertEqual(e.out, [3, 4, 3])
+        e.out.clear()
+        e.eval(["block",
+            ["define", "a", 3], ["print", "a"],
+            ["block", ["set", "a", 4], ["print", "a"]],
+            ["print", "a"],
+        ])
+        self.assertEqual(e.out, [3, 4, 4])
 
 if __name__ == '__main__':
     unittest.main()
