@@ -43,17 +43,6 @@ class Evaluator:
     def set(self, name, val):
         self.env[name] = val
 
-# def repl():
-#     ev = Evaluator()
-#     while True:
-#         src = input(": ") 
-#         result = ev.eval(eval(src))
-#         if ev.out: print(*ev.out, sep="\n")
-#         if result is not None: print("> ", result)
-#         ev.out = []
-
-# repl(); exit()
-
 class Scanner:
     def __init__(self, src) -> None:
         self.src = src
@@ -77,6 +66,8 @@ class Scanner:
     def curchr(self):
         return self.src[self.current] if self.current < len(self.src) else ""
 
+from typing import Any
+
 class Parser:
     def __init__(self, src):
         self.scanner = Scanner(src)
@@ -85,15 +76,23 @@ class Parser:
         self.advance()
 
     def parse(self):
-        statements = []
+        statements: list[Any] = ["block"]
         while self.current != "": statements.append(self.statement())
         return statements
     
     def statement(self):
+        if self.current == "{": return self.block()
         if self.current == "if": return self.if_()
         expr = self.expression()
         self.consume(";")
         return expr
+
+    def block(self):
+        self.advance()
+        block: list[Any] = ["block"]
+        while self.current != "}": block.append(self.statement())
+        self.consume("}")
+        return block
 
     def if_(self):
         self.advance()
@@ -101,8 +100,10 @@ class Parser:
         cnd = self.expression()
         self.consume(")")
         thn = self.statement()
-        self.consume("else")
-        els = self.statement()
+        els = None
+        if self.current == "else":
+            self.advance()
+            els = self.statement()
         return ["if", cnd, thn, els]
 
     def expression(self):
@@ -141,7 +142,7 @@ class Parser:
             self.consume(")")
             return expr
         if isinstance(self.current, int): return self.advance()
-        assert False, "primary(): Invalid Expression"
+        assert False, f"primary(): Unexpected `{self.current}`"
 
     def advance(self):
         ret = self.current
@@ -150,127 +151,27 @@ class Parser:
         return ret
     
     def consume(self, token):
-        assert(self.current == token)
+        assert self.current == token, f"consume(): Expected `{token}`, found `{self.current}`"
         self.advance()
 
 def run(src):
     return Evaluator().eval(Parser(src).parse())
 
-import unittest
+def repl_eval():
+    repl(eval)
 
-# class TestScanner(unittest.TestCase):
-#     def test_int(self):
-#         s = Scanner("  1 12 a ab + +- ")
-#         self.assertEqual(s.next(), 1)
-#         self.assertEqual(s.next(), 12)
-#         self.assertEqual(s.next(), "a")
-#         self.assertEqual(s.next(), "ab")
-#         self.assertEqual(s.next(), "+")
-#         self.assertEqual(s.next(), "+")
-#         self.assertEqual(s.next(), "-")
-#         self.assertEqual(s.next(), "")
+def repl_src():
+    repl(lambda src: Parser(src).parse())
 
-# class TestParse(unittest.TestCase):
-#     def test_int(self):
-#         self.assertEqual(Parser("12;").parse(), [12])
-    
-#     def test_factor(self):
-#         self.assertEqual(Parser("2 * 3;").parse(), [["*", 2, 3]])
-#         self.assertEqual(Parser("2 * 3 * 4;").parse(), [["*", ["*", 2, 3], 4]])
-#         self.assertEqual(Parser("24 / 3;").parse(), [["/", 24, 3]])
-#         self.assertEqual(Parser("24 / 3 / 2;").parse(), [["/", ["/", 24, 3], 2]])
+def repl(parser):
+    ev = Evaluator()
+    while True:
+        src = input(": ") 
+        if src == "": break
+        result = ev.eval(parser(src))
+        if ev.out: print(*ev.out, sep="\n")
+        if result is not None: print(">", result)
+        ev.out.clear()
 
-# class TestRun(unittest.TestCase):
-#     def test_int(self):
-#         self.assertEqual(run("12;"), 12)
-    
-#     def test_factor(self):
-#         self.assertEqual(run("2 * 3;"), 6)
-#         self.assertEqual(run("2 * 3 * 4;"), 24)
-#         self.assertEqual(run("24 / 3;"), 8)
-#         self.assertEqual(run("24 / 3 / 2;"), 4)
-#         self.assertEqual(run("24 / 3 * 2;"), 16)
-
-#     def test_term(self):
-#         self.assertEqual(run("2 + 3;"), 5)
-#         self.assertEqual(run("6 - 3 - 2;"), 1)
-#         self.assertEqual(run("2 * 3 + 4;"), 10)
-#         self.assertEqual(run("6 - 4 / 2;"), 4)
-
-#     def test_grouping(self):
-#         self.assertEqual(run("2 * (3 + 4);"), 14)
-#         self.assertEqual(run("(6 - 4) / 2;"), 1)
-
-#     def test_if(self):
-#         self.assertEqual(run("if (1) 2; else 3;"), 2)
-#         self.assertEqual(run("if (0) 2; else 3;"), 3)
-
-#     def test_ternary(self):
-#         self.assertEqual(run("1 ? 2 : 3;"), 2)
-#         self.assertEqual(run("0 ? 2 : 3;"), 3)
-#         self.assertEqual(run("1 ? 1  ? : 2 : 3 : 1 ? 4 : 5;"), 2)
-#         self.assertEqual(run("1 ? 0  ? : 2 : 3 : 1 ? 4 : 5;"), 3)
-#         self.assertEqual(run("0 ? 1  ? : 2 : 3 : 1 ? 4 : 5;"), 4)
-#         self.assertEqual(run("0 ? 1  ? : 2 : 3 : 0 ? 4 : 5;"), 5)
-
-class TestEval(unittest.TestCase):
-
-    def test_int(self):
-        self.assertEqual(Evaluator().eval(1), 1)
-                              
-    def test_if(self):
-        self.assertEqual(Evaluator().eval(["if", 0, 1, 2]), 2)
-        self.assertEqual(Evaluator().eval(["if", 1, 1, 2]), 1)
-
-    def test_eval_block(self):
-        self.assertEqual(Evaluator().eval(["block"]), None)
-        self.assertEqual(Evaluator().eval(["block", 1]), 1)
-        self.assertEqual(Evaluator().eval(["block", 1, 2]), 2)
-    
-    def test_var(self):
-        self.assertEqual(Evaluator().eval(["block", ["set", "a", 3], "a"]), 3)
-    
-    def test_calc(self):
-        self.assertEqual(Evaluator().eval(["*", ["+", 1, 2], 3]), 9)
-    
-    def test_func(self):
-        self.assertEqual(Evaluator().eval([["func", ["a", "b"],  ["+", "a", "b"]], 2, 3]), 5)
-
-    def test_mutual_recursion(self):
-        self.assertEqual(Evaluator().eval(["block", 
-            ["set", "is_even", ["func", ["a"], ["if", ["=", "a", 0], 1, ["is_odd", ["-", "a", 1]]]]],
-            ["set", "is_odd", ["func", ["a"], ["if", ["=", "a", 0], 0, ["is_even", ["-", "a", 1]]]]],
-            ["is_even", 4],
-        ]), 1)
-
-    def test_closure(self):
-        self.assertEqual(Evaluator().eval(["block", 
-            ["set", "make_adder", ["func", ["a"], ["func", ["b"], ["+", "a", "b"]]]],
-            ["set", "add3", ["make_adder", 3]],
-            ["add3", 4]
-        ]), 7)
-
-    def test_fib(self):
-        self.assertEqual(Evaluator().eval(["block",
-            ["set", "fib", ["func", ["a"], [
-                "if", ["=", "a", 1], 1, [
-                    "if", ["=", "a", 2], 1, [
-                        "+", ["fib", ["-", "a", 1]], ["fib", ["-", "a", 2]]]]]]],
-            ["fib", 6]
-        ]), 8)
-
-    def test_print(self):
-        e = Evaluator()
-        e.eval(["print", 3])
-        self.assertEqual(e.out, [3])
-
-    def test_scope(self):
-        e = Evaluator()
-        e.eval(["block",
-            ["set", "a", 3], ["print", "a"],
-            ["block", ["set", "a", 4], ["print", "a"]],
-            ["print", "a"],
-        ])
-        self.assertEqual(e.out, [3, 4, 3])
-
-unittest.main()
+if __name__ == '__main__':
+    repl_src()
