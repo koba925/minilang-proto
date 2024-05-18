@@ -1,4 +1,5 @@
 import operator as op
+from typing import Any
 
 
 class Evaluator:
@@ -47,7 +48,6 @@ class Evaluator:
     def set(self, name, val):
         self.env[name] = val
 
-
 class Scanner:
     def __init__(self, src) -> None:
         self.src = src
@@ -57,27 +57,23 @@ class Scanner:
     def next(self):
         while self.curchr().isspace():
             self.current += 1
-        if self.curchr() == "":
-            return ""
         self.start = self.current
-        if self.curchr().isnumeric():
-            while self.curchr().isnumeric():
+        match self.curchr():
+            case "": return ""
+            case c if c.isnumeric():
+                while self.curchr().isnumeric():
+                    self.current += 1
+            case c if c.isalpha():
+                while self.curchr().isalnum():
+                    self.current += 1
+            case _:
                 self.current += 1
-        elif self.curchr().isalpha():
-            while self.curchr().isalnum():
-                self.current += 1
-        else:
-            self.current += 1
         lexeme = self.src[self.start : self.current]
         self.start = self.current
         return int(lexeme) if lexeme.isnumeric() else lexeme
 
     def curchr(self):
         return self.src[self.current] if self.current < len(self.src) else ""
-
-
-from typing import Any
-
 
 class Parser:
     def __init__(self, src):
@@ -93,13 +89,13 @@ class Parser:
         return statements
 
     def statement(self):
-        if self.current == "{":
-            return self.block()
-        if self.current == "if":
-            return self.if_()
-        expr = self.expression()
-        self.consume(";")
-        return expr
+        match self.current:
+            case "{": return self.block()
+            case "if": return self.if_()
+            case _:
+                expr = self.expression()
+                self.consume(";")
+                return expr
 
     def block(self):
         self.advance()
@@ -126,13 +122,12 @@ class Parser:
 
     def ternary(self):
         cnd = self.term()
-        if self.current == "?":
-            self.advance()
-            thn = self.ternary()
-            self.consume(":")
-            els = self.ternary()
-            return ["if", cnd, thn, els]
-        return cnd
+        if self.current != "?": return cnd
+        self.advance()
+        thn = self.ternary()
+        self.consume(":")
+        els = self.ternary()
+        return ["if", cnd, thn, els]
 
     def term(self):
         left = self.factor()
@@ -151,14 +146,16 @@ class Parser:
         return left
 
     def primary(self):
-        if self.current == "(":
-            self.advance()
-            expr = self.expression()
-            self.consume(")")
-            return expr
-        if isinstance(self.current, int):
-            return self.advance()
-        assert False, f"primary(): Unexpected `{self.current}`"
+        match self.current:
+            case "(":
+                self.advance()
+                expr = self.expression()
+                self.consume(")")
+                return expr
+            case int(_):
+                return self.advance()
+            case _:
+                assert False, f"Unexpected `{self.current}`"
 
     def advance(self):
         ret = self.current
@@ -167,21 +164,10 @@ class Parser:
         return ret
 
     def consume(self, token):
-        assert self.current == token, f"consume(): Expected `{token}`, found `{self.current}`"
+        assert self.current == token, f"Expected `{token}`, found `{self.current}`"
         self.advance()
 
-
-def run(src):
-    return Evaluator().eval(Parser(src).parse())
-
-
-def repl_eval():
-    repl(eval)
-
-
-def repl_src():
-    repl(lambda src: Parser(src).parse())
-
+def run(src): return Evaluator().eval(Parser(src).parse())
 
 def repl(parser):
     ev = Evaluator()
@@ -196,6 +182,6 @@ def repl(parser):
             print(">", result)
         ev.out.clear()
 
-
 if __name__ == "__main__":
-    repl_src()
+    # repl(eval)
+    repl(lambda src: Parser(src).parse())
