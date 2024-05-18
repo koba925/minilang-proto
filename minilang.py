@@ -155,12 +155,28 @@ class Parser:
         return left
 
     def factor(self):
-        left = self.primary()
+        left = self.call()
         while self.current in ("*", "/"):
             op = self.advance()
             right = self.primary()
             left = [op, left, right]
         return left
+
+    def call(self):
+        name = self.primary()
+        while self.current in ("(",):
+            self.advance()
+            name = [name] + self.arguments()
+        return name
+
+    def arguments(self):
+        args = []
+        while self.current != ")":
+            args.append(self.expression())
+            if self.current != ")":
+                self.consume(",")
+        self.consume(")")
+        return args
 
     def primary(self):
         match self.current:

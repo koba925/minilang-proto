@@ -1,5 +1,5 @@
 import unittest
-from minilang import Evaluator, run
+from minilang import Evaluator, Parser, run
 
 class TestRun(unittest.TestCase):
     def test_int(self):
@@ -51,6 +51,15 @@ class TestRun(unittest.TestCase):
 
     def test_var(self):
         self.assertEqual(run("set a = 1; a + 2;"), 3)
+
+    def _test_value_and_out(self, src, value, out):
+        e = Evaluator()
+        self.assertEqual(e.eval(Parser(src).parse()), value)
+        self.assertEqual(e.out, out)
+
+    def test_print(self):
+        self._test_value_and_out("print(3);", None, [3])
+        self._test_value_and_out("print(2); print(3); 1;", 1, [2, 3])
 
 if __name__ == '__main__':
     unittest.main()
