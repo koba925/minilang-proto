@@ -1,7 +1,6 @@
 import operator as op
 from typing import Any
 
-
 class Evaluator:
     def __init__(self) -> None:
         self.out = []
@@ -18,6 +17,7 @@ class Evaluator:
             case ["if", cnd, thn, els]:
                 return self.eval(thn) if self.eval(cnd) else self.eval(els)
             case ["block", *exps]: return self.block(exps)
+            case ["define", name, val]: return self.define(name, self.eval(val))
             case ["set", name, val]: return self.set(name, self.eval(val))
             case ["func", param, body]: return ["func", param, body, self.env]
             case [op, *args]:
@@ -40,14 +40,23 @@ class Evaluator:
         self.env = prev
         return val
 
+    def define(self, name, val):
+        self.env[name] = val
+
+    def set(self, name, val):
+        def _set(env, name):
+            if name in env:
+                env[name] = val
+            else:
+                _set(env["_enclosing"], name)
+
+        return _set(self.env, name)
+
     def get(self, name):
         def _get(env, name):
             return env[name] if name in env else _get(env["_enclosing"], name)
 
         return _get(self.env, name)
-
-    def set(self, name, val):
-        self.env[name] = val
 
 class Scanner:
     def __init__(self, src) -> None:
@@ -92,7 +101,8 @@ class Parser:
         match self.current:
             case "{": return self.block()
             case "if": return self.if_()
-            case "set": return self.set()
+            case "define" | "set":
+                return self.define_set(self.current)
             case _:
                 expr = self.expression()
                 self.consume(";")
@@ -118,13 +128,13 @@ class Parser:
             els = self.statement()
         return ["if", cnd, thn, els]
 
-    def set(self):
+    def define_set(self, op):
         self.advance()
         name = self.primary()
         self.consume("=")
         val = self.expression()
         self.consume(";")
-        return ["set", name, val]
+        return [op, name, val]
 
     def expression(self):
         return self.equality()
@@ -185,10 +195,8 @@ class Parser:
                 expr = self.expression()
                 self.consume(")")
                 return expr
-            case int(_) | str(_):
-                return self.advance()
-            case _:
-                assert False, f"Unexpected `{self.current}`"
+            case int(_) | str(_): return self.advance()
+            case _: assert False, f"Unexpected `{self.current}`"
 
     def advance(self):
         ret = self.current
@@ -206,13 +214,10 @@ def repl(parser):
     ev = Evaluator()
     while True:
         src = input(": ")
-        if src == "":
-            break
+        if src == "": break
         result = ev.eval(parser(src))
-        if ev.out:
-            print(*ev.out, sep="\n")
-        if result is not None:
-            print(">", result)
+        if ev.out: print(*ev.out, sep="\n")
+        if result is not None: print(">", result)
         ev.out.clear()
 
 if __name__ == "__main__":
