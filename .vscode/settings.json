@@ -1,4 +1,15 @@
 {
+    "files.trimTrailingWhitespace": true,
+    "editor.formatOnSave": false,
+    "python.languageServer": "Pylance",
+    "python.analysis.typeCheckingMode": "basic",
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+    },
+    "black-formatter.args": [
+        "--line-length",
+        "255"
+    ],
     "python.testing.unittestArgs": [
         "-v",
         "-s",

@@ -1,5 +1,6 @@
 import operator as op
 
+
 class Evaluator:
     def __init__(self) -> None:
         self.out = []
@@ -12,7 +13,8 @@ class Evaluator:
         match exp:
             case int(n): return n
             case str(s): return self.get(exp)
-            case ["if", cnd, thn, els]: return self.eval(thn) if self.eval(cnd) else self.eval(els)
+            case ["if", cnd, thn, els]:
+                return self.eval(thn) if self.eval(cnd) else self.eval(els)
             case ["block", *exps]: return self.block(exps)
             case ["set", name, val]: return self.set(name, self.eval(val))
             case ["func", param, body]: return ["func", param, body, self.env]
@@ -24,7 +26,8 @@ class Evaluator:
         prev = self.env
         self.env = {"_enclosing": prev}
         val = None
-        for exp in exps: val = self.eval(exp)
+        for exp in exps:
+            val = self.eval(exp)
         self.env = prev
         return val
 
@@ -38,10 +41,12 @@ class Evaluator:
     def get(self, name):
         def _get(env, name):
             return env[name] if name in env else _get(env["_enclosing"], name)
+
         return _get(self.env, name)
-    
+
     def set(self, name, val):
         self.env[name] = val
+
 
 class Scanner:
     def __init__(self, src) -> None:
@@ -50,23 +55,29 @@ class Scanner:
         self.current = 0
 
     def next(self):
-        while self.curchr().isspace(): self.current += 1
-        if self.curchr() == "": return ""
+        while self.curchr().isspace():
+            self.current += 1
+        if self.curchr() == "":
+            return ""
         self.start = self.current
         if self.curchr().isnumeric():
-            while self.curchr().isnumeric(): self.current += 1
+            while self.curchr().isnumeric():
+                self.current += 1
         elif self.curchr().isalpha():
-            while self.curchr().isalnum(): self.current += 1
+            while self.curchr().isalnum():
+                self.current += 1
         else:
             self.current += 1
-        lexeme = self.src[self.start:self.current]
+        lexeme = self.src[self.start : self.current]
         self.start = self.current
         return int(lexeme) if lexeme.isnumeric() else lexeme
-    
+
     def curchr(self):
         return self.src[self.current] if self.current < len(self.src) else ""
 
+
 from typing import Any
+
 
 class Parser:
     def __init__(self, src):
@@ -77,12 +88,15 @@ class Parser:
 
     def parse(self):
         statements: list[Any] = ["block"]
-        while self.current != "": statements.append(self.statement())
+        while self.current != "":
+            statements.append(self.statement())
         return statements
-    
+
     def statement(self):
-        if self.current == "{": return self.block()
-        if self.current == "if": return self.if_()
+        if self.current == "{":
+            return self.block()
+        if self.current == "if":
+            return self.if_()
         expr = self.expression()
         self.consume(";")
         return expr
@@ -90,13 +104,14 @@ class Parser:
     def block(self):
         self.advance()
         block: list[Any] = ["block"]
-        while self.current != "}": block.append(self.statement())
+        while self.current != "}":
+            block.append(self.statement())
         self.consume("}")
         return block
 
     def if_(self):
         self.advance()
-        self.consume("(") 
+        self.consume("(")
         cnd = self.expression()
         self.consume(")")
         thn = self.statement()
@@ -141,7 +156,8 @@ class Parser:
             expr = self.expression()
             self.consume(")")
             return expr
-        if isinstance(self.current, int): return self.advance()
+        if isinstance(self.current, int):
+            return self.advance()
         assert False, f"primary(): Unexpected `{self.current}`"
 
     def advance(self):
@@ -149,29 +165,37 @@ class Parser:
         self.current = self.next
         self.next = self.scanner.next()
         return ret
-    
+
     def consume(self, token):
         assert self.current == token, f"consume(): Expected `{token}`, found `{self.current}`"
         self.advance()
 
+
 def run(src):
     return Evaluator().eval(Parser(src).parse())
+
 
 def repl_eval():
     repl(eval)
 
+
 def repl_src():
     repl(lambda src: Parser(src).parse())
+
 
 def repl(parser):
     ev = Evaluator()
     while True:
-        src = input(": ") 
-        if src == "": break
+        src = input(": ")
+        if src == "":
+            break
         result = ev.eval(parser(src))
-        if ev.out: print(*ev.out, sep="\n")
-        if result is not None: print(">", result)
+        if ev.out:
+            print(*ev.out, sep="\n")
+        if result is not None:
+            print(">", result)
         ev.out.clear()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     repl_src()

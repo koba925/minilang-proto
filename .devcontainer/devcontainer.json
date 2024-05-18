@@ -5,15 +5,10 @@
 	"workspaceFolder": "/workspaces/minilang",
 	"customizations": {
 		"vscode": {
-			"settings": {
-				"python.analysis.typeCheckingMode": "basic",
-				"[python]": {
-					"editor.formatOnSave": false
-				}
-			},
 			"extensions": [
 				"ms-python.python",
 				"ms-python.vscode-pylance",
+				"ms-python.black-formatter"
 			]
 		}
 	},
