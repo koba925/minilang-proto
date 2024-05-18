@@ -1,0 +1,21 @@
+{
+	"name": "minilang",
+	"dockerComposeFile": "compose.yml",
+	"service": "minilang",
+	"workspaceFolder": "/workspaces/minilang",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"python.analysis.typeCheckingMode": "basic",
+				"[python]": {
+					"editor.formatOnSave": false
+				}
+			},
+			"extensions": [
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+			]
+		}
+	},
+	"remoteUser": "vscode"
+}
