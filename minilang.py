@@ -56,24 +56,23 @@ class Scanner:
         self.current = 0
 
     def next(self):
-        while self.curchr().isspace():
+        while self.curchar().isspace():
             self.current += 1
         self.start = self.current
-        match self.curchr():
+        match self.curchar():
             case "": return ""
             case c if c.isnumeric():
-                while self.curchr().isnumeric():
+                while self.curchar().isnumeric():
                     self.current += 1
             case c if c.isalpha():
-                while self.curchr().isalnum():
+                while self.curchar().isalnum():
                     self.current += 1
-            case _:
-                self.current += 1
+            case _: self.current += 1
         lexeme = self.src[self.start : self.current]
         self.start = self.current
         return int(lexeme) if lexeme.isnumeric() else lexeme
 
-    def curchr(self):
+    def curchar(self):
         return self.src[self.current] if self.current < len(self.src) else ""
 
 class Parser:
@@ -93,6 +92,7 @@ class Parser:
         match self.current:
             case "{": return self.block()
             case "if": return self.if_()
+            case "set": return self.set()
             case _:
                 expr = self.expression()
                 self.consume(";")
@@ -117,6 +117,14 @@ class Parser:
             self.advance()
             els = self.statement()
         return ["if", cnd, thn, els]
+
+    def set(self):
+        self.advance()
+        name = self.primary()
+        self.consume("=")
+        val = self.expression()
+        self.consume(";")
+        return ["set", name, val]
 
     def expression(self):
         return self.equality()
@@ -161,7 +169,7 @@ class Parser:
                 expr = self.expression()
                 self.consume(")")
                 return expr
-            case int(_):
+            case int(_) | str(_):
                 return self.advance()
             case _:
                 assert False, f"Unexpected `{self.current}`"
