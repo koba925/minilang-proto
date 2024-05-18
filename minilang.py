@@ -6,7 +6,8 @@ class Evaluator:
     def __init__(self) -> None:
         self.out = []
         self.env = {
-            "+": op.add, "-": op.sub, "*": op.mul, "/": op.floordiv, "=": op.eq,
+            "+": op.add, "-": op.sub, "*": op.mul, "/": op.floordiv,
+            "=": lambda a, b: 1 if a == b else 0,
             "print": self.out.append
         }
 
@@ -118,7 +119,15 @@ class Parser:
         return ["if", cnd, thn, els]
 
     def expression(self):
-        return self.ternary()
+        return self.equality()
+
+    def equality(self):
+        left = self.ternary()
+        while self.current in ("=",):
+            op = self.advance()
+            right = self.ternary()
+            left = [op, left, right]
+        return left
 
     def ternary(self):
         cnd = self.term()

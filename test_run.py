@@ -1,5 +1,5 @@
 import unittest
-from minilang import run
+from minilang import Evaluator, run
 
 class TestRun(unittest.TestCase):
     def test_int(self):
@@ -17,6 +17,11 @@ class TestRun(unittest.TestCase):
         self.assertEqual(run("6 - 3 - 2;"), 1)
         self.assertEqual(run("2 * 3 + 4;"), 10)
         self.assertEqual(run("6 - 4 / 2;"), 4)
+
+    def test_equality(self):
+        self.assertEqual(run("1 = 1;"), 1)
+        self.assertEqual(run("1 = 0;"), 0)
+        self.assertEqual(run("1 + 3 = 2 * 2;"), 1)
 
     def test_grouping(self):
         self.assertEqual(run("2 * (3 + 4);"), 14)
