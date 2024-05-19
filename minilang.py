@@ -87,8 +87,7 @@ class Scanner:
 class Parser:
     def __init__(self, src):
         self.scanner = Scanner(src)
-        self.current = self.next = ""
-        self.advance()
+        self.current = ""
         self.advance()
 
     def parse(self):
@@ -199,27 +198,22 @@ class Parser:
             case _: assert False, f"Unexpected `{self.current}`"
 
     def advance(self):
-        ret = self.current
-        self.current = self.next
-        self.next = self.scanner.next()
-        return ret
+        self.current = self.scanner.next()
+        return self.current
 
     def consume(self, token):
         assert self.current == token, f"Expected `{token}`, found `{self.current}`"
         self.advance()
 
-def run(src): return Evaluator().eval(Parser(src).parse())
+def run(src):
+    return Evaluator().eval(Parser(src).parse())
 
-def repl(parser):
+if __name__ == "__main__":
     ev = Evaluator()
     while True:
         src = input(": ")
         if src == "": break
-        result = ev.eval(parser(src))
+        result = ev.eval(Parser(src).parse())
         if ev.out: print(*ev.out, sep="\n")
         if result is not None: print(">", result)
         ev.out.clear()
-
-if __name__ == "__main__":
-    # repl(eval)
-    repl(lambda src: Parser(src).parse())
