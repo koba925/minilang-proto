@@ -61,13 +61,12 @@ class Evaluator:
 class Scanner:
     def __init__(self, src) -> None:
         self.src = src
-        self.start = 0
         self.current = 0
 
     def next(self):
         while self.curchar().isspace():
             self.current += 1
-        self.start = self.current
+        start = self.current
         match self.curchar():
             case "": return ""
             case c if c.isnumeric():
@@ -77,8 +76,7 @@ class Scanner:
                 while self.curchar().isalnum():
                     self.current += 1
             case _: self.current += 1
-        lexeme = self.src[self.start : self.current]
-        self.start = self.current
+        lexeme = self.src[start:self.current]
         return int(lexeme) if lexeme.isnumeric() else lexeme
 
     def curchar(self):
