@@ -17,7 +17,7 @@ class Evaluator:
             case ["if", cnd, thn, els]:
                 return self.eval(thn) if self.eval(cnd) else self.eval(els)
             case ["block", *exps]: return self.block(exps)
-            case ["define", name, val]: return self.define(name, self.eval(val))
+            case ["var", name, val]: return self.var(name, self.eval(val))
             case ["set", name, val]: return self.set(name, self.eval(val))
             case ["func", param, body]: return ["func", param, body, self.env]
             case [op, *args]:
@@ -40,7 +40,7 @@ class Evaluator:
         self.env = prev
         return val
 
-    def define(self, name, val):
+    def var(self, name, val):
         self.env[name] = val
 
     def set(self, name, val):
@@ -98,8 +98,8 @@ class Parser:
         match self.current:
             case "{": return self.block()
             case "if": return self.if_()
-            case "define" | "set":
-                return self.define_set(self.current)
+            case "var" | "set":
+                return self.var_set(self.current)
             case _:
                 expr = self.expression()
                 self.consume(";")
@@ -125,7 +125,7 @@ class Parser:
             els = self.statement()
         return ["if", cnd, thn, els]
 
-    def define_set(self, op):
+    def var_set(self, op):
         self.advance()
         name = self.primary()
         self.consume("=")

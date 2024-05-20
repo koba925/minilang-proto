@@ -50,24 +50,24 @@ class TestRun(unittest.TestCase):
         self.assertEqual(run("if (1=2) {2; 3;} else {4; 5;}"), 5)
 
     def test_var(self):
-        self.assertEqual(run("define a = 1; a + 2;"), 3)
-        self.assertEqual(run("define a = 2; set a = a + 3; a;"), 5)
-        self._test_out("define a = 2; define b = 3; print(a); print(b);", [2, 3])
+        self.assertEqual(run("var a = 1; a + 2;"), 3)
+        self.assertEqual(run("var a = 2; set a = a + 3; a;"), 5)
+        self._test_out("var a = 2; var b = 3; print(a); print(b);", [2, 3])
 
     def test_print(self):
         self._test_out("print(3);", [3])
         self._test_out("print(2); print(3); 1;", [2, 3])
 
     def test_scope(self):
-        self._test_out("define a = 2; print(a); {define a = 4; print (a);} print(a);", [2, 4, 2])
-        self._test_out("define a = 2; print(a); {set a = 4; print (a);} print(a);", [2, 4, 4])
+        self._test_out("var a = 2; print(a); {var a = 4; print (a);} print(a);", [2, 4, 2])
+        self._test_out("var a = 2; print(a); {set a = 4; print (a);} print(a);", [2, 4, 4])
 
     def test_func(self):
         self.assertEqual(run("func (a, b) {a + b;}(2, 3);"), 5)
 
     def test_fib(self):
         self.assertEqual(run("""
-            define fib = func (a) {
+            var fib = func (a) {
                 if (a = 1) 1;
                 else if (a = 2) 1;
                 else fib(a - 1) + fib(a - 2);
@@ -77,8 +77,8 @@ class TestRun(unittest.TestCase):
 
     def test_mutual_recursion(self):
         self._test_out("""
-            define is_even = func (a) { if (a = 0) 1; else is_odd(a - 1); };
-            define is_odd = func (a) { if (a = 0) 0; else is_even(a - 1); };
+            var is_even = func (a) { if (a = 0) 1; else is_odd(a - 1); };
+            var is_odd = func (a) { if (a = 0) 0; else is_even(a - 1); };
             print(is_even(3));
             print(is_odd(3));
             print(is_even(4));
@@ -87,8 +87,8 @@ class TestRun(unittest.TestCase):
 
     def test_closure(self):
         self.assertEqual(run("""
-            define make_adder = func (a) { func (b) { a + b; }; };
-            define add3 = make_adder(3);
+            var make_adder = func (a) { func (b) { a + b; }; };
+            var add3 = make_adder(3);
             add3(4);
         """), 7)
 
