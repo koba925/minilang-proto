@@ -62,11 +62,40 @@ class TestRun(unittest.TestCase):
         self._test_out("define a = 2; print(a); {define a = 4; print (a);} print(a);", [2, 4, 2])
         self._test_out("define a = 2; print(a); {set a = 4; print (a);} print(a);", [2, 4, 4])
 
+    def test_func(self):
+        self.assertEqual(run("func (a, b) {a + b;}(2, 3);"), 5)
+
+    def test_fib(self):
+        self.assertEqual(run("""
+            define fib = func (a) {
+                if (a = 1) 1;
+                else if (a = 2) 1;
+                else fib(a - 1) + fib(a - 2);
+            };
+            fib(6);
+        """), 8)
+
+    def test_mutual_recursion(self):
+        self._test_out("""
+            define is_even = func (a) { if (a = 0) 1; else is_odd(a - 1); };
+            define is_odd = func (a) { if (a = 0) 0; else is_even(a - 1); };
+            print(is_even(3));
+            print(is_odd(3));
+            print(is_even(4));
+            print(is_odd(4));
+        """, [0, 1, 1, 0])
+
+    def test_closure(self):
+        self.assertEqual(run("""
+            define make_adder = func (a) { func (b) { a + b; }; };
+            define add3 = make_adder(3);
+            add3(4);
+        """), 7)
+
     def _test_out(self, src, out):
         e = Evaluator()
         e.eval(Parser(src).parse())
         self.assertEqual(e.out, out)
-
 
 if __name__ == '__main__':
     unittest.main()

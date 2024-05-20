@@ -73,7 +73,7 @@ class Scanner:
                 while self.curchar().isnumeric():
                     self.current += 1
             case c if c.isalpha():
-                while self.curchar().isalnum():
+                while self.curchar().isalnum() or self.curchar() == "_":
                     self.current += 1
             case _: self.current += 1
         lexeme = self.src[start:self.current]
@@ -192,16 +192,34 @@ class Parser:
                 expr = self.expression()
                 self.consume(")")
                 return expr
+            case "func": return self.func()
             case int(_) | str(_): return self.advance()
             case _: assert False, f"Unexpected `{self.current}`"
 
-    def advance(self):
-        self.current = self.scanner.next()
-        return self.current
+    def func(self):
+        self.advance()
+        self.consume("(")
+        params = []
+        while self.current != ")":
+            param = self.current
+            assert isinstance(param, str)
+            self.advance()
+            params.append(param)
+            if self.current != ")":
+                self.consume(",")
+        self.consume(")")
+        assert self.current == "{"
+        body = self.block()
+        return ["func", params, body]
 
     def consume(self, token):
         assert self.current == token, f"Expected `{token}`, found `{self.current}`"
         self.advance()
+
+    def advance(self):
+        current = self.current
+        self.current = self.scanner.next()
+        return current
 
 def run(src):
     return Evaluator().eval(Parser(src).parse())
