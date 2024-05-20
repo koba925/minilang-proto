@@ -33,13 +33,24 @@ class TestRun(unittest.TestCase):
     def test_equality(self):
         self.assertEqual(run("1 = 1;"), 1)
         self.assertEqual(run("1 = 0;"), 0)
+        self.assertEqual(run("1 # 1;"), 0)
+        self.assertEqual(run("1 # 0;"), 1)
         self.assertEqual(run("1 + 3 = 2 * 2;"), 1)
+        self.assertEqual(run("1 + 3 # 2 * 2;"), 0)
 
     def test_if(self):
         self.assertEqual(run("if (1 = 1) 2;"), 2)
-        self.assertEqual(run("if (1 = 2) 2;"), None)
+        self.assertEqual(run("if (1 # 1) 2;"), None)
         self.assertEqual(run("if (1 = 1) 2; else 3;"), 2)
-        self.assertEqual(run("if (1 = 0) 2; else 3;"), 3)
+        self.assertEqual(run("if (1 # 1) 2; else 3;"), 3)
+
+    def test_while(self):
+        self.assertEqual(run("""
+            var sum = 0;
+            var i = 1;
+            while (i # 11) { set sum = sum + i; set i = i + 1; }
+            sum;
+        """), 55)
 
     def test_block(self):
         self.assertEqual(run("{}"), None)

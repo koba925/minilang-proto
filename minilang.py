@@ -7,16 +7,19 @@ class Evaluator:
         self.env = {
             "+": op.add, "-": op.sub, "*": op.mul, "/": op.floordiv,
             "=": lambda a, b: 1 if a == b else 0,
+            "#": lambda a, b: 1 if a != b else 0,
             "print": self.out.append
         }
 
-    def eval(self, s):
-        match s:
+    def eval(self, exp):
+        match exp:
             case int(n): return n
-            case str(s): return self.get(s)
-            case ["if", cnd, thn, els]:
-                return self.eval(thn) if self.eval(cnd) else self.eval(els)
+            case str(exp): return self.get(exp)
             case ["block", *exps]: return self.block(exps)
+            case ["if", cnd, thn, els]:
+                return self.eval(thn) if self.eval(cnd) != 0 else self.eval(els)
+            case ["while", cnd, body]:
+                return self.while_(cnd, body)
             case ["var", name, val]: return self.var(name, self.eval(val))
             case ["set", name, val]: return self.set(name, self.eval(val))
             case ["func", param, body]: return ["func", param, body, self.env]
@@ -31,6 +34,12 @@ class Evaluator:
         for exp in exps:
             val = self.eval(exp)
         self.env = prev
+        return val
+
+    def while_(self, cnd, body):
+        val = None
+        while self.eval(cnd) != 0:
+            val = self.eval(body)
         return val
 
     def apply(self, op, args):
@@ -98,6 +107,7 @@ class Parser:
         match self.current:
             case "{": return self.block()
             case "if": return self.if_()
+            case "while": return self.while_()
             case "var" | "set":
                 return self.var_set(self.current)
             case _:
@@ -125,6 +135,14 @@ class Parser:
             els = self.statement()
         return ["if", cnd, thn, els]
 
+    def while_(self):
+        self.advance()
+        self.consume("(")
+        cnd = self.expression()
+        self.consume(")")
+        body = self.statement()
+        return ["while", cnd, body]
+
     def var_set(self, op):
         self.advance()
         name = self.primary()
@@ -138,7 +156,7 @@ class Parser:
 
     def equality(self):
         left = self.ternary()
-        while self.current in ("=",):
+        while self.current in ("=", "#"):
             op = self.advance()
             right = self.ternary()
             left = [op, left, right]
