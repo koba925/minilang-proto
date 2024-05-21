@@ -54,16 +54,17 @@ class Evaluator:
 
     def set(self, name, val):
         def _set(env, name):
-            if name in env:
-                env[name] = val
-            else:
-                _set(env["_enclosing"], name)
+            if name in env: env[name] = val
+            elif "_enclosing" in env: _set(env["_enclosing"], name)
+            else: assert False, f"`{name}` not defined"
 
-        return _set(self.env, name)
+        _set(self.env, name)
 
     def get(self, name):
         def _get(env, name):
-            return env[name] if name in env else _get(env["_enclosing"], name)
+            if name in env: return env[name]
+            elif "_enclosing" in env: return _get(env["_enclosing"], name)
+            else: assert False, f"`{name}` not defined"
 
         return _get(self.env, name)
 
@@ -116,7 +117,7 @@ class Parser:
                 return expr
 
     def block(self):
-        self.advance()
+        self.consume("{")
         block: list[Any] = ["block"]
         while self.current != "}":
             block.append(self.statement())
@@ -220,13 +221,12 @@ class Parser:
         params = []
         while self.current != ")":
             param = self.current
-            assert isinstance(param, str)
+            assert isinstance(param, str), f"Name expected, found `{param}`"
             self.advance()
             params.append(param)
             if self.current != ")":
                 self.consume(",")
         self.consume(")")
-        assert self.current == "{"
         body = self.block()
         return ["func", params, body]
 
@@ -247,7 +247,10 @@ if __name__ == "__main__":
     while True:
         src = input(": ")
         if src == "": break
-        result = ev.eval(Parser(src).parse())
-        if ev.out: print(*ev.out, sep="\n")
-        if result is not None: print(">", result)
+        try:
+            result = ev.eval(Parser(src).parse())
+            if ev.out: print(*ev.out, sep="\n")
+            if result is not None: print(">", result)
+        except AssertionError as e:
+            print(e)
         ev.out.clear()
