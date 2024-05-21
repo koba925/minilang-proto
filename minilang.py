@@ -1,6 +1,10 @@
 import operator as op
 from typing import Any
 
+class Return(Exception):
+    def __init__(self, val):
+        self.val = val
+
 class Evaluator:
     def __init__(self) -> None:
         self.out = []
@@ -23,6 +27,7 @@ class Evaluator:
             case ["var", name, val]: return self.var(name, self.eval(val))
             case ["set", name, val]: return self.set(name, self.eval(val))
             case ["func", param, body]: return ["func", param, body, self.env]
+            case ["return", val]: raise Return(self.eval(val))
             case [op, *args]:
                 op, args = self.eval(op), [self.eval(arg) for arg in args]
                 return op(*args) if callable(op) else self.apply(op, args)
@@ -45,7 +50,8 @@ class Evaluator:
     def apply(self, op, args):
         prev = self.env
         self.env = dict(zip(op[1], args)) | {"_enclosing": op[3]}
-        val = self.eval(op[2])
+        try: val = self.eval(op[2])
+        except Return as ret: val = ret.val
         self.env = prev
         return val
 
@@ -111,6 +117,7 @@ class Parser:
             case "while": return self.while_()
             case "var" | "set":
                 return self.var_set(self.current)
+            case "return": return self.return_()
             case _:
                 expr = self.expression()
                 self.consume(";")
@@ -151,6 +158,13 @@ class Parser:
         val = self.expression()
         self.consume(";")
         return [op, name, val]
+
+    def return_(self):
+        self.advance()
+        val = None
+        if self.current != ";": val = self.expression()
+        self.consume(";")
+        return ["return", val]
 
     def expression(self):
         return self.equality()

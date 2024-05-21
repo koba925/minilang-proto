@@ -74,14 +74,49 @@ class TestRun(unittest.TestCase):
         self._test_out("var a = 2; print(a); {set a = 4; print (a);} print(a);", [2, 4, 4])
 
     def test_func(self):
+        self.assertEqual(run("func () {2;}();"), 2)
+        self.assertEqual(run("func (a) {a + 1;}(2);"), 3)
         self.assertEqual(run("func (a, b) {a + b;}(2, 3);"), 5)
+
+    def test_return(self):
+        self._test_out("func () { print(1); return; print(0); }();", [1])
+        self._test_out("""
+            var f = func (a) { print(1); return a + 1; print(0); 0; };
+            print(f(2));
+        """, [1, 3])
 
     def test_fib(self):
         self.assertEqual(run("""
-            var fib = func (a) {
-                if (a = 1) 1;
-                else if (a = 2) 1;
-                else fib(a - 1) + fib(a - 2);
+            var fib = func (n) {
+                if (n = 1) 1;
+                else if (n = 2) 1;
+                else fib(n - 1) + fib(n - 2);
+            };
+            fib(6);
+        """), 8)
+        self.assertEqual(run("""
+            var fib = func (n) {
+                if (n = 1) return 1;
+                if (n = 2) return 1;
+                return fib(n - 1) + fib(n - 2);
+            };
+            fib(6);
+        """), 8)
+        self.assertEqual(run("""
+            var fib = func (n) {
+                if (n = 1) return 1;
+                if (n = 2) return 1;
+                var a = 1;
+                var b = 1;
+                var c = 0;
+                var i = 3;
+                while (i # n + 1) {
+                    set c = a + b;
+                    set a = b;
+                    set b = c;
+                    set i = i + 1;
+                }
+                return c;
             };
             fib(6);
         """), 8)
